@@ -1,7 +1,7 @@
 # bot.py
 import os, asyncio
 import discord
-from syjson import SyJson
+from syjson import SyJsonpierantonio.dagostino@gmail.com
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -16,8 +16,12 @@ class g:
 
 async def action_handler(action, interaction):
     if action["type"] == "role":
-        role = discord.utils.get(g.guild.roles,name=action["role"])
-        await interaction.user.add_roles(role)
+        roles = []
+        if isinstance(action["role"],list):
+            roles = [discord.utils.get(g.guild.roles,name=role) for role in action["role"]]
+        else:
+            roles = [discord.utils.get(g.guild.roles,name=action["role"])]
+        [await interaction.user.add_roles(ele) for ele in roles]
         return f"Authenticated successfully with role {action['role']} :), Welcome to the server!"
     else:
         return "Error: Unknown action 0_0"
