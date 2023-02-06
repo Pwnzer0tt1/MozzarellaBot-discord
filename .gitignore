@@ -1,0 +1,5 @@
+/bin/**
+/lib/**
+/pyvenv.cfg
+/db.json
+.env
