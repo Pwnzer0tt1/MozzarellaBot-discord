@@ -76,5 +76,5 @@ class AuthBtn(discord.ui.Button):
 
 class AuthView(discord.ui.View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
         self.add_item(AuthBtn())
