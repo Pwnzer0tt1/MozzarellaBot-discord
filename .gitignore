@@ -2,4 +2,5 @@
 /lib/**
 /pyvenv.cfg
 /db.json
-.env
+/.env
+/__pycache__/**
