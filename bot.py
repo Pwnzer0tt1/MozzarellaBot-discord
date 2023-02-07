@@ -49,7 +49,7 @@ class GenTokensModal(discord.ui.Modal):
         if not isinstance(amount,str) or not amount.isdigit():
             await interaction.response.edit_message("Please insert a valid amount")
             return
-        tokens = [await add_token_role(self.roles) for _ in range(int(amount))]
+        tokens = await asyncio.gather(*[add_token_role(self.roles) for _ in range(int(amount))])
         token_text = "\n".join(tokens)
         await interaction.response.edit_message(content=f"Here are your generated tokens:\n```\n{token_text}\n```\nSave the tokens before closing this message!", view=None)
 
@@ -73,8 +73,10 @@ class GenTokensBtn(discord.ui.Button):
         view.add_item(select_roles)
         async def select_roles_callback(interaction):
             roles = interaction.data["values"]
-            await interaction.response.send_modal(GenTokensModal(roles))
-            await interaction.edit_original_response(content="Insert the amount of tokens to generate", view=GenTokensView(roles))
+            await asyncio.gather(
+                interaction.response.send_modal(GenTokensModal(roles)),
+                interaction.edit_original_response(content="Insert the amount of tokens to generate", view=GenTokensView(roles)),
+            )
         select_roles.callback = select_roles_callback
         await interaction.response.edit_message(content="Select the role to add with tokens", view=view)
 
