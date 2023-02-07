@@ -41,17 +41,23 @@ class EmailDetailsModal(discord.ui.Modal):
         
         btn_send = discord.ui.Button(label="Send", style=discord.ButtonStyle.success)
         async def send_callback(interaction):
-            await asyncio.gather(
-                interaction.response.edit_message(content="Sending emails... ✉️", view=None),
-                send_emails_with_token(emails, object, message, self.roles)
-            )
-            await interaction.edit_original_response(content="Emails sent! 👍"),
+            await interaction.response.edit_message(content="Sending emails... ✉️", view=None)
+            failed = await send_emails_with_token(emails, object, message, self.roles)
+            if len(failed) == 0:
+                await interaction.edit_original_response(content="Emails sent! 👍")
+            else:
+                await interaction.edit_original_response(
+                    content="Emails sent! 👍\n\n{} emails were not sended due to a problem:\n```\n{}```".format(
+                        len(failed),
+                        "```\n```\n".join([f"Failed to: {email}\nDue to: {error}" for email, error in failed])
+                    )
+                )
         btn_send.callback = send_callback
         
         view = discord.ui.View()
         view.add_item(btn_cancel)
         view.add_item(btn_send)
-        embed = discord.Embed(title=object, description=message+"\n\n DISCORD TOKEN: %TOKEN%")
+        embed = discord.Embed(title=object, description=message+"\n\n---> DISCORD TOKEN: %TOKEN%\n")
         await interaction.response.edit_message(content="The Emails will be sent to {} addresses: `{}` Do you confirm your action?".format(len(emails),"`, `".join(emails)), view=view, embed=embed)
  
 class RevokeTokensModal(discord.ui.Modal):

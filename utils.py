@@ -2,12 +2,15 @@ from dotenv import load_dotenv
 load_dotenv()
 from syjson import SyJson
 import os, discord, asyncio, secrets
+from email.message import EmailMessage
+import aiosmtplib
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 EMAIL_FROM = os.getenv('EMAIL_FROM')
 SMTP_SERVER = os.getenv('SMTP_SERVER')
-USER_SMTP = os.getenv('USER_SMTP')
+SMTP_SERVER_PORT = int(os.getenv('SMTP_SERVER_PORT'))
+USER_SMTP = os.getenv('USER_SMTP', EMAIL_FROM)
 PSW_SMTP = os.getenv('PSW_SMTP')
 
 EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
@@ -53,5 +56,19 @@ async def action_handler(action, interaction):
     else:
         return "Error: Unknown action 0_0"
 
+async def _send_email_wih_token(email, object, message, roles):
+    try:
+        msg = EmailMessage()
+        msg["From"] = EMAIL_FROM
+        msg["To"] = email
+        msg["Subject"] = object
+        token = await add_token_role(roles)
+        msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
+        return await aiosmtplib.send(msg, hostname=SMTP_SERVER, port=SMTP_SERVER_PORT, username=USER_SMTP, password=PSW_SMTP)
+    except Exception as e:
+        return e
+
 async def send_emails_with_token(emails, object, message, roles):
-    await asyncio.sleep(1) #to implement!
+    result = await asyncio.gather(*[_send_email_wih_token(email, object, message, roles) for email in emails])
+    return [(email, result[i])for i,email in enumerate(emails) if isinstance(result[i], Exception) or result[i] is None]
+
