@@ -20,7 +20,9 @@ class g:
     auth_ch_name = "🔐︱auth"
     synced = False
 
-db = SyJson("db.json")
+if not os.path.exists("data"):
+    os.mkdir("data")
+db = SyJson("data/db.json")
 
 gen_token_lock = asyncio.Lock()
 async def gen_token():
