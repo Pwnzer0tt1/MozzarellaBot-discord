@@ -2,8 +2,7 @@
 import discord
 from discord import app_commands
 from views import AdminView, AuthView
-from utils import db, TOKEN, g
-
+from utils import db, TOKEN, g, error_handler
 
 client = discord.Client(intents=discord.Intents.default())
     
@@ -17,10 +16,7 @@ async def gen_auth_token(interaction):
 
 @gen_auth_token.error
 async def gen_auth_token_error(interaction, error):
-    if isinstance(error, app_commands.errors.MissingPermissions):
-        await interaction.response.send_message("You don't have the permissions to use this command", ephemeral=True)
-    else:
-        await interaction.response.send_message("Unknown error", ephemeral=True)
+    await error_handler(interaction, error)
 
 async def reset_auth_channel(channel):
     await channel.set_permissions(g.guild.default_role, send_messages=False, read_messages=True)

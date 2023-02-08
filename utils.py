@@ -4,6 +4,7 @@ from syjson import SyJson
 import os, discord, asyncio, secrets
 from email.message import EmailMessage
 import aiosmtplib
+from discord import app_commands
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -74,3 +75,8 @@ async def send_emails_with_token(emails, object, message, roles):
     result = await asyncio.gather(*[_send_email_wih_token(email, object, message, roles) for email in emails])
     return [(email, result[i])for i,email in enumerate(emails) if isinstance(result[i], Exception) or result[i] is None]
 
+async def error_handler(error, interaction):
+    if isinstance(error, app_commands.errors.MissingPermissions):
+        await interaction.response.send_message("You don't have the permissions to use this command", ephemeral=True)
+    else:
+        await interaction.response.send_message("Unknown error", ephemeral=True)

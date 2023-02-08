@@ -1,12 +1,14 @@
 import discord, asyncio, re
-from utils import EMAIL_REGEX, add_token_role, db, action_handler, send_emails_with_token
+from discord import app_commands
+from utils import EMAIL_REGEX, add_token_role, db, action_handler, send_emails_with_token, error_handler
 
 class GenTokensModal(discord.ui.Modal):
     def __init__(self, roles):
         super().__init__(title="Generate Tokens")
         self.roles = roles
         self.add_item(discord.ui.TextInput(label="Insert the Amount"))
-        
+    
+    @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         amount = interaction.data["components"][0]["components"][0]["value"]
         if not isinstance(amount,str) or not amount.isdigit():
@@ -15,7 +17,6 @@ class GenTokensModal(discord.ui.Modal):
         tokens = await asyncio.gather(*[add_token_role(self.roles) for _ in range(int(amount))])
         token_text = "\n".join(tokens)
         await interaction.response.edit_message(content=f"Here are your generated tokens:\n```\n{token_text}\n```\nSave the tokens before closing this message!", view=None)
-
 
 class EmailDetailsModal(discord.ui.Modal):
     
@@ -26,6 +27,7 @@ class EmailDetailsModal(discord.ui.Modal):
         self.add_item(discord.ui.TextInput(label="Subject:", placeholder="Hi there! Welcome to our discord server!", style=discord.TextStyle.short))
         self.add_item(discord.ui.TextInput(label="Message:", placeholder="Under this message will be sent the token to use for the auth", style=discord.TextStyle.paragraph))
     
+    @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         form = [ele["components"][0]["value"] for ele in interaction.data["components"]]
         emails = re.findall(EMAIL_REGEX, form[0])
@@ -40,6 +42,7 @@ class EmailDetailsModal(discord.ui.Modal):
         btn_cancel.callback = cancel_callback
         
         btn_send = discord.ui.Button(label="Send", style=discord.ButtonStyle.success)
+        @app_commands.checks.has_permissions(administrator=True)
         async def send_callback(interaction):
             await interaction.response.edit_message(content="Sending emails... ✉️", view=None)
             failed = await send_emails_with_token(emails, object, message, self.roles)
@@ -64,7 +67,8 @@ class RevokeTokensModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="Revoke Tokens")
         self.add_item(discord.ui.TextInput(label="Insert the Token(s)",style=discord.TextStyle.paragraph))
-        
+    
+    @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         tokens = [ele.strip() for ele in interaction.data["components"][0]["components"][0]["value"].split() if ele]
         for token in tokens:
@@ -78,6 +82,7 @@ class AuthModal(discord.ui.Modal):
         super().__init__(title="Authentication")
         self.add_item(discord.ui.TextInput(label="Insert the Token"))
     
+    @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         token = interaction.data["components"][0]["components"][0]["value"]
         if token in db["auth_tokens"]:

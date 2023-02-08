@@ -1,5 +1,6 @@
 import discord, asyncio
 from modals import GenTokensModal, EmailDetailsModal, RevokeTokensModal, AuthModal
+from discord import app_commands
 
 class GenTokensView(discord.ui.View):
     def __init__(self, roles):
@@ -14,11 +15,13 @@ class GenTokensView(discord.ui.View):
 class GenTokensBtn(discord.ui.Button):
     def __init__(self):
         super().__init__(label="Generate Tokens", style=discord.ButtonStyle.primary)
-        
+    
+    @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
         view = discord.ui.View()
         select_roles = discord.ui.RoleSelect(max_values=10)
         view.add_item(select_roles)
+        @app_commands.checks.has_permissions(administrator=True)
         async def select_roles_callback(interaction):
             roles = interaction.data["values"]
             await asyncio.gather(
@@ -34,6 +37,7 @@ class EmailDetailsView(discord.ui.View):
         self.roles = roles
         self.btn = discord.ui.Button(label="Open", style=discord.ButtonStyle.primary)
         self.add_item(self.btn)
+        @app_commands.checks.has_permissions(administrator=True)
         async def callback(interaction):
             await interaction.response.send_modal(EmailDetailsModal(roles))
         self.btn.callback = callback
@@ -41,11 +45,13 @@ class EmailDetailsView(discord.ui.View):
 class EmailTokensBtn(discord.ui.Button):
     def __init__(self):
         super().__init__(label="Emails with Token", style=discord.ButtonStyle.success)
-        
+    
+    @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
         view = discord.ui.View()
         select_roles = discord.ui.RoleSelect(max_values=10)
         view.add_item(select_roles)
+        @app_commands.checks.has_permissions(administrator=True)
         async def select_roles_callback(interaction):
             roles = interaction.data["values"]
             await interaction.response.send_modal(EmailDetailsModal(roles))
@@ -56,7 +62,8 @@ class EmailTokensBtn(discord.ui.Button):
 class RevokeTokensBtn(discord.ui.Button):
     def __init__(self):
         super().__init__(label="Revoke Tokens", style=discord.ButtonStyle.danger)
-        
+    
+    @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
         await interaction.response.send_modal(RevokeTokensModal())
 
@@ -70,7 +77,8 @@ class AdminView(discord.ui.View):
 class AuthBtn(discord.ui.Button):
     def __init__(self):
         super().__init__(label="Authenticate", style=discord.ButtonStyle.primary, emoji="🔐")
-        
+    
+    @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
         await interaction.response.send_modal(AuthModal())
 
