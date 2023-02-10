@@ -46,7 +46,9 @@ class EmailDetailsModal(discord.ui.Modal):
         async def send_callback(interaction):
             await interaction.response.edit_message(content="Sending emails... ✉️", view=None)
             failed = await send_emails_with_token(emails, object, message, self.roles)
-            if len(failed) == 0:
+            if isinstance(failed, Exception):
+                await interaction.edit_original_response(content=f"An error occured while sending emails:\n```\n{failed}\n```")
+            elif len(failed) == 0:
                 await interaction.edit_original_response(content="Emails sent! 👍")
             else:
                 await interaction.edit_original_response(

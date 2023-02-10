@@ -59,7 +59,7 @@ async def action_handler(action, interaction):
     else:
         return "Error: Unknown action 0_0"
 
-async def _send_email_wih_token(email, object, message, roles):
+async def _send_email_wih_token(email, object, message, roles, client=None):
     try:
         msg = EmailMessage()
         msg["From"] = EMAIL_FROM
@@ -67,12 +67,24 @@ async def _send_email_wih_token(email, object, message, roles):
         msg["Subject"] = object
         token = await add_token_role(roles)
         msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
-        return await aiosmtplib.send(msg, hostname=SMTP_SERVER, port=SMTP_SERVER_PORT, username=USER_SMTP, password=PSW_SMTP)
+        if client:
+            return await client.send_message(msg)
+        else:
+            return await aiosmtplib.send(msg, hostname=SMTP_SERVER, port=SMTP_SERVER_PORT, username=USER_SMTP, password=PSW_SMTP)
     except Exception as e:
         return e
 
 async def send_emails_with_token(emails, object, message, roles):
-    result = await asyncio.gather(*[_send_email_wih_token(email, object, message, roles) for email in emails])
+    try:
+        client = aiosmtplib.SMTP(hostname=SMTP_SERVER, port=SMTP_SERVER_PORT, username=USER_SMTP, password=PSW_SMTP)
+        await client.connect()
+    except Exception as e:
+        return e
+    result = await asyncio.gather(*[_send_email_wih_token(email, object, message, roles, client) for email in emails])
+    try:
+        await client.quit()
+    except Exception:
+        client.close()
     return [(email, result[i])for i,email in enumerate(emails) if isinstance(result[i], Exception) or result[i] is None]
 
 async def error_handler(error, interaction):
