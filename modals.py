@@ -81,7 +81,7 @@ class RevokeTokensModal(discord.ui.Modal):
 
 class AuthModal(discord.ui.Modal):
     def __init__(self):
-        super().__init__(title="Authentication")
+        super().__init__(title="Authentication", custom_id="auth_modal")
         self.add_item(discord.ui.TextInput(label="Insert the Token"))
     
     @app_commands.checks.has_permissions(administrator=True)
