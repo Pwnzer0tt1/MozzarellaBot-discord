@@ -56,4 +56,9 @@ async def on_ready():
         await cmd.sync()
         g.synced = True
 
+async def setup_hook():
+    client.add_view(AuthView())
+
+client.setup_hook = setup_hook
+
 client.run(TOKEN)
