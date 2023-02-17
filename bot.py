@@ -25,7 +25,7 @@ async def gen_auth_token(interaction):
 @app_commands.checks.has_permissions(administrator=True)
 async def gen_auth_ch(interaction):
     await check_and_create_authchannel()
-    await interaction.response.send_message("The Auth channel hash been regenerated!", ephemeral=True)
+    await interaction.response.send_message("The Auth channel has been regenerated!", ephemeral=True)
 
 @gen_auth_token.error
 async def gen_auth_token_error(interaction, error):
