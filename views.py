@@ -76,7 +76,7 @@ class AdminView(discord.ui.View):
         
 class AuthBtn(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="Authenticate", style=discord.ButtonStyle.primary, emoji="🔐")
+        super().__init__(label="Authenticate", style=discord.ButtonStyle.primary, emoji="🔐", custom_id="auth_btn")
     
     @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
