@@ -1,10 +1,11 @@
 import discord, asyncio
 from modals import GenTokensModal, EmailDetailsModal, RevokeTokensModal, AuthModal
 from discord import app_commands
+from utils import GENERAL_TIMEOUT
 
 class GenTokensView(discord.ui.View):
     def __init__(self, roles):
-        super().__init__()
+        super().__init__(timeout=GENERAL_TIMEOUT)
         self.roles = roles
         self.btn = discord.ui.Button(label="Open", style=discord.ButtonStyle.primary)
         self.add_item(self.btn)
@@ -18,7 +19,7 @@ class GenTokensBtn(discord.ui.Button):
     
     @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
-        view = discord.ui.View()
+        view = discord.ui.View(timeout=GENERAL_TIMEOUT)
         select_roles = discord.ui.RoleSelect(max_values=10)
         view.add_item(select_roles)
         @app_commands.checks.has_permissions(administrator=True)
@@ -33,7 +34,7 @@ class GenTokensBtn(discord.ui.Button):
 
 class EmailDetailsView(discord.ui.View):
     def __init__(self, roles):
-        super().__init__()
+        super().__init__(timeout=GENERAL_TIMEOUT)
         self.roles = roles
         self.btn = discord.ui.Button(label="Open", style=discord.ButtonStyle.primary)
         self.add_item(self.btn)
@@ -48,7 +49,7 @@ class EmailTokensBtn(discord.ui.Button):
     
     @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
-        view = discord.ui.View()
+        view = discord.ui.View(timeout=GENERAL_TIMEOUT)
         select_roles = discord.ui.RoleSelect(max_values=10)
         view.add_item(select_roles)
         @app_commands.checks.has_permissions(administrator=True)
@@ -69,7 +70,7 @@ class RevokeTokensBtn(discord.ui.Button):
 
 class AdminView(discord.ui.View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=GENERAL_TIMEOUT)
         self.add_item(GenTokensBtn())
         self.add_item(RevokeTokensBtn())
         self.add_item(EmailTokensBtn())

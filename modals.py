@@ -1,10 +1,10 @@
 import discord, asyncio, re
 from discord import app_commands
-from utils import EMAIL_REGEX, add_token_role, db, action_handler, send_emails_with_token, error_handler
+from utils import EMAIL_REGEX, add_token_role, db, action_handler, send_emails_with_token, GENERAL_TIMEOUT
 
 class GenTokensModal(discord.ui.Modal):
     def __init__(self, roles):
-        super().__init__(title="Generate Tokens")
+        super().__init__(title="Generate Tokens", timeout=GENERAL_TIMEOUT)
         self.roles = roles
         self.add_item(discord.ui.TextInput(label="Insert the Amount"))
     
@@ -21,7 +21,7 @@ class GenTokensModal(discord.ui.Modal):
 class EmailDetailsModal(discord.ui.Modal):
     
     def __init__(self, roles):
-        super().__init__(title="Send Emails with Token")
+        super().__init__(title="Send Emails with Token", timeout=GENERAL_TIMEOUT)
         self.roles = roles
         self.add_item(discord.ui.TextInput(label="To:", placeholder="email1@domain.com, email2@domain.com\nemail3@domain.com [...]", style=discord.TextStyle.paragraph))
         self.add_item(discord.ui.TextInput(label="Subject:", placeholder="Hi there! Welcome to our discord server!", style=discord.TextStyle.short))
@@ -67,7 +67,7 @@ class EmailDetailsModal(discord.ui.Modal):
  
 class RevokeTokensModal(discord.ui.Modal):
     def __init__(self):
-        super().__init__(title="Revoke Tokens")
+        super().__init__(title="Revoke Tokens", timeout=GENERAL_TIMEOUT)
         self.add_item(discord.ui.TextInput(label="Insert the Token(s)",style=discord.TextStyle.paragraph))
     
     @app_commands.checks.has_permissions(administrator=True)
