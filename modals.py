@@ -74,10 +74,13 @@ class RevokeTokensModal(discord.ui.Modal):
     async def on_submit(self, interaction):
         tokens = [ele.strip() for ele in interaction.data["components"][0]["components"][0]["value"].split() if ele]
         counter_tokens = 0
-        for token in tokens:
-            if token in db["auth_tokens"]:
-                counter_tokens+=1
-                del db["auth_tokens"][token]
+        guild_id = str(interaction.guild.id)
+        if guild_id in db:
+            db[guild_id].create("auth_tokens",{})
+            for token in tokens:
+                if token in db[guild_id]["auth_tokens"]:
+                    counter_tokens+=1
+                    del db[guild_id]["auth_tokens"][token]
         await interaction.response.edit_message(content=f"Successfully revoked {counter_tokens} tokens", view=None)
 
 
@@ -89,9 +92,12 @@ class AuthModal(discord.ui.Modal):
     @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         token = interaction.data["components"][0]["components"][0]["value"]
-        if token in db["auth_tokens"]:
-            action = db["auth_tokens"][token].var()
-            del db["auth_tokens"][token]
+        guild_id = str(interaction.guild.id)
+        db.create(guild_id,{})
+        db[guild_id].create("auth_tokens",{})
+        if token in db[guild_id]["auth_tokens"]:
+            action = db[guild_id]["auth_tokens"][token].var()
+            del db[guild_id]["auth_tokens"][token]
             return await interaction.response.send_message(await action_handler(action, interaction), ephemeral=True)
         else:
             await interaction.response.send_message("Token invalid or already used :/", ephemeral=True)
