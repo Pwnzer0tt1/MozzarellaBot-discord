@@ -73,10 +73,12 @@ class RevokeTokensModal(discord.ui.Modal):
     @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         tokens = [ele.strip() for ele in interaction.data["components"][0]["components"][0]["value"].split() if ele]
+        counter_tokens = 0
         for token in tokens:
             if token in db["auth_tokens"]:
+                counter_tokens+=1
                 del db["auth_tokens"][token]
-        await interaction.response.edit_message(content=f"Successfully revoked {len(tokens)} tokens", view=None)
+        await interaction.response.edit_message(content=f"Successfully revoked {counter_tokens} tokens", view=None)
 
 
 class AuthModal(discord.ui.Modal):

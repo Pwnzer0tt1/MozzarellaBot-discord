@@ -22,11 +22,12 @@ db = SyJson("data/db.json")
 
 gen_token_lock = asyncio.Lock()
 async def gen_token(guild_id):
+    db.create(guild_id,{})
     async with gen_token_lock:
         while True:
             tk = secrets.token_hex(16)
             if tk not in db[guild_id]["auth_tokens"]:
-                db["auth_tokens"][tk] = None
+                db[guild_id]["auth_tokens"][tk] = None
                 return tk
 
 async def add_token_role(roles, guild_id, description=None):
