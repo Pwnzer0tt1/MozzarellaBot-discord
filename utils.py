@@ -21,18 +21,18 @@ if not os.path.exists("data"):
 db = SyJson("data/db.json")
 
 gen_token_lock = asyncio.Lock()
-async def gen_token():
+async def gen_token(guild_id):
     async with gen_token_lock:
         while True:
             tk = secrets.token_hex(16)
-            if tk not in db["auth_tokens"]:
+            if tk not in db[guild_id]["auth_tokens"]:
                 db["auth_tokens"][tk] = None
                 return tk
 
-async def add_token_role(roles):
+async def add_token_role(roles, guild_id, description=None):
     roles = list(map(int, roles))
-    tk = await gen_token()
-    db["auth_tokens"][tk] = {"role":roles,"type":"role"}
+    tk = await gen_token(guild_id)
+    db[guild_id]["auth_tokens"][tk] = {"role":roles,"type":"role","description":description}
     return tk
 
 async def action_handler(action, interaction):
@@ -54,13 +54,13 @@ async def action_handler(action, interaction):
     else:
         return "Error: Unknown action 0_0"
 
-async def _send_email_wih_token(email, object, message, roles, client=None):
+async def _send_email_wih_token(email, object, message, roles, guild_id, client=None):
     try:
         msg = EmailMessage()
         msg["From"] = EMAIL_FROM
         msg["To"] = email
         msg["Subject"] = object
-        token = await add_token_role(roles)
+        token = await add_token_role(roles, guild_id, {"email":email,"object":object})
         msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
         if client:
             return await client.send_message(msg)
@@ -69,13 +69,13 @@ async def _send_email_wih_token(email, object, message, roles, client=None):
     except Exception as e:
         return e
 
-async def send_emails_with_token(emails, object, message, roles):
+async def send_emails_with_token(emails, object, message, roles, guild_id):
     try:
         client = aiosmtplib.SMTP(hostname=SMTP_SERVER, port=SMTP_SERVER_PORT, username=USER_SMTP, password=PSW_SMTP)
         await client.connect()
     except Exception as e:
         return e
-    result = await asyncio.gather(*[_send_email_wih_token(email, object, message, roles, client) for email in emails])
+    result = await asyncio.gather(*[_send_email_wih_token(email, object, message, roles, guild_id, client) for email in emails])
     try:
         await client.quit()
     except Exception:

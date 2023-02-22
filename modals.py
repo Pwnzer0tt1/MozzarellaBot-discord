@@ -14,7 +14,7 @@ class GenTokensModal(discord.ui.Modal):
         if not isinstance(amount,str) or not amount.isdigit():
             await interaction.response.edit_message("Please insert a valid amount")
             return
-        tokens = await asyncio.gather(*[add_token_role(self.roles) for _ in range(int(amount))])
+        tokens = await asyncio.gather(*[add_token_role(self.roles, interaction.guild.id) for _ in range(int(amount))])
         token_text = "\n".join(tokens)
         await interaction.response.edit_message(content=f"Here are your generated tokens:\n```\n{token_text}\n```\nSave the tokens before closing this message!", view=None)
 
@@ -45,7 +45,7 @@ class EmailDetailsModal(discord.ui.Modal):
         @app_commands.checks.has_permissions(administrator=True)
         async def send_callback(interaction):
             await interaction.response.edit_message(content="Sending emails... ✉️", view=None)
-            failed = await send_emails_with_token(emails, object, message, self.roles)
+            failed = await send_emails_with_token(emails, object, message, self.roles, interaction.guild.id)
             if isinstance(failed, Exception):
                 await interaction.edit_original_response(content=f"An error occured while sending emails:\n```\n{failed}\n```")
             elif len(failed) == 0:
