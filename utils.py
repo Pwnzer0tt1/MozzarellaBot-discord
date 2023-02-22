@@ -22,7 +22,9 @@ db = SyJson("data/db.json")
 
 gen_token_lock = asyncio.Lock()
 async def gen_token(guild_id):
+    guild_id = str(guild_id)
     db.create(guild_id,{})
+    db[guild_id].create("auth_tokens",{})
     async with gen_token_lock:
         while True:
             tk = secrets.token_hex(16)

@@ -42,7 +42,6 @@ synced = False
 async def on_ready():
     global synced
     print(f'{client.user} has connected to Discord!')
-    db.create("auth_tokens",{})
     if not synced:
         await cmd.sync()
         synced = True
