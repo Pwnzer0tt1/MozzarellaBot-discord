@@ -22,6 +22,7 @@ db = SyJson("data/db.json")
 
 gen_token_lock = asyncio.Lock()
 async def gen_token(guild_id):
+    print(guild_id, str(guild_id))
     db.create(guild_id,{})
     async with gen_token_lock:
         while True:
