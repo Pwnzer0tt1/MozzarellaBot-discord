@@ -20,7 +20,7 @@ async def reset_auth_channel(channel):
 async def gen_auth_token(interaction):
     await interaction.response.send_message("Click a button to activate an admin function", view=AdminView(), ephemeral=True)
 
-@cmd.command(name="edit_to_auth_channel", description="Create the auth channel in the current channel")
+@cmd.command(name="generate_auth_channel", description="Create the auth channel in the current channel")
 @app_commands.default_permissions(administrator=True)
 @app_commands.checks.has_permissions(administrator=True)
 async def gen_auth_ch(interaction):
