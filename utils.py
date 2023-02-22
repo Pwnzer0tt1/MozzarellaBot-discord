@@ -22,7 +22,6 @@ db = SyJson("data/db.json")
 
 gen_token_lock = asyncio.Lock()
 async def gen_token(guild_id):
-    print(guild_id, str(guild_id))
     db.create(guild_id,{})
     async with gen_token_lock:
         while True:
@@ -33,6 +32,7 @@ async def gen_token(guild_id):
 
 async def add_token_role(roles, guild_id, description=None):
     roles = list(map(int, roles))
+    guild_id = str(guild_id)
     tk = await gen_token(guild_id)
     db[guild_id]["auth_tokens"][tk] = {"role":roles,"type":"role","description":description}
     return tk
