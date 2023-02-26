@@ -1,4 +1,5 @@
 discord.py
 python-dotenv
-syjson
 aiosmtplib
+beanie
+motor

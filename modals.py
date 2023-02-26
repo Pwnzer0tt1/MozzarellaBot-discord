@@ -1,6 +1,8 @@
 import discord, asyncio, re
 from discord import app_commands
-from utils import EMAIL_REGEX, add_token_role, db, action_handler, send_emails_with_token, GENERAL_TIMEOUT
+from utils import EMAIL_REGEX, add_token_role, action_handler, send_emails_with_token, GENERAL_TIMEOUT
+from db import Token
+from beanie.operators import In
 
 class GenTokensModal(discord.ui.Modal):
     def __init__(self, roles):
@@ -73,14 +75,9 @@ class RevokeTokensModal(discord.ui.Modal):
     @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         tokens = [ele.strip() for ele in interaction.data["components"][0]["components"][0]["value"].split() if ele]
-        counter_tokens = 0
-        guild_id = str(interaction.guild.id)
-        if guild_id in db:
-            db[guild_id].create("auth_tokens",{})
-            for token in tokens:
-                if token in db[guild_id]["auth_tokens"]:
-                    counter_tokens+=1
-                    del db[guild_id]["auth_tokens"][token]
+        token_to_delete = Token.find(In(Token.token, tokens))
+        counter_tokens = await token_to_delete.count()
+        await token_to_delete.delete()
         await interaction.response.edit_message(content=f"Successfully revoked {counter_tokens} tokens", view=None)
 
 
@@ -89,15 +86,13 @@ class AuthModal(discord.ui.Modal):
         super().__init__(title="Authentication", custom_id="auth_modal", timeout=None)
         self.add_item(discord.ui.TextInput(label="Insert the Token"))
     
-    @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         token = interaction.data["components"][0]["components"][0]["value"]
-        guild_id = str(interaction.guild.id)
-        db.create(guild_id,{})
-        db[guild_id].create("auth_tokens",{})
-        if token in db[guild_id]["auth_tokens"]:
-            action = db[guild_id]["auth_tokens"][token].var()
-            del db[guild_id]["auth_tokens"][token]
-            return await interaction.response.send_message(await action_handler(action, interaction), ephemeral=True)
+        fetched_token = await Token.find_one(Token.token == token, Token.guild == interaction.guild.id)
+        if fetched_token is None:
+            await interaction.response.send_message("Token invalid, already used or expired :/", ephemeral=True)
         else:
-            await interaction.response.send_message("Token invalid or already used :/", ephemeral=True)
+            results = await asyncio.gather(*[action_handler(action, interaction) for action in fetched_token.operations])
+            await fetched_token.delete()
+            text = f"Token accepted, {len(results)} actions performed:\n```"+('```\n```'.join(results))+"```"
+            return await interaction.response.send_message(text, ephemeral=True)

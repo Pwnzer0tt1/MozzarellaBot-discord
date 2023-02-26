@@ -1,59 +1,55 @@
-from dotenv import load_dotenv
-load_dotenv()
-from syjson import SyJson
 import os, discord, asyncio, secrets
 from email.message import EmailMessage
 import aiosmtplib
 from discord import app_commands
+from db import Token, RoleOp
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-
 EMAIL_FROM = os.getenv('EMAIL_FROM')
 SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_SERVER_PORT = int(os.getenv('SMTP_SERVER_PORT'))
 USER_SMTP = os.getenv('USER_SMTP', EMAIL_FROM)
 PSW_SMTP = os.getenv('PSW_SMTP')
+MONGO_URL = os.getenv('MONGO_URL')
 GENERAL_TIMEOUT = int(os.getenv('GENERAL_TIMEOUT', 24*60*60))
+
 EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
 
-if not os.path.exists("data"):
-    os.mkdir("data")
-db = SyJson("data/db.json")
 
-gen_token_lock = asyncio.Lock()
-async def gen_token(guild_id):
-    guild_id = str(guild_id)
-    db.create(guild_id,{})
-    db[guild_id].create("auth_tokens",{})
-    async with gen_token_lock:
-        while True:
-            tk = secrets.token_hex(16)
-            if tk not in db[guild_id]["auth_tokens"]:
-                db[guild_id]["auth_tokens"][tk] = None
-                return tk
-
-async def add_token_role(roles, guild_id, description=None):
+async def add_token_role(roles, guild_id, email=None):
     roles = list(map(int, roles))
-    guild_id = str(guild_id)
-    tk = await gen_token(guild_id)
-    db[guild_id]["auth_tokens"][tk] = {"role":roles,"type":"role","description":description}
-    return tk
+    guild_id = int(guild_id)
+    exc = None
+    for _ in range(3):
+        try:
+            new_token = Token(
+                token=secrets.token_hex(16),
+                guild=guild_id,
+                operations=[RoleOp(roles)],
+                email=email
+            )
+            await new_token.save()
+            break
+        except Exception as e:
+            exc = e
+    else:
+        raise exc
+    return new_token.token
 
 async def action_handler(action, interaction):
-    if action["type"] == "role":
+    if action.type == "role":
         roles = []
-        try:
-            if isinstance(action["role"],list):
-                roles = [discord.utils.get(interaction.guild.roles,id=int(role)) for role in action["role"]]
-            else:
-                roles = [discord.utils.get(interaction.guild.roles,id=int(action["role"]))]
-        except Exception:
-            return "There was a problem trying to add the role(s) :/, if it's necessary, contact the admin, the token has been invalidated :("
-        for ele in roles:
+        async def add_role(interaction, role):
             try:
-                await interaction.user.add_roles(ele) 
+                await interaction.user.add_roles(role) 
             except Exception:
                 pass
+        try:
+            roles = [discord.utils.get(interaction.guild.roles,id=int(role)) for role in action.roles]
+            asyncio.gather(*[add_role(interaction, ele) for ele in roles])
+        except Exception:
+            return "There was a problem trying to add the role(s) :/, if it's necessary, contact the admin, the token has been invalidated :("
+        
         return f"Authenticated successfully with role(s) `{'` `'.join([r.name for r in roles])}`, Welcome to the server!"
     else:
         return "Error: Unknown action 0_0"
@@ -64,7 +60,7 @@ async def _send_email_wih_token(email, object, message, roles, guild_id, client=
         msg["From"] = EMAIL_FROM
         msg["To"] = email
         msg["Subject"] = object
-        token = await add_token_role(roles, guild_id, {"email":email,"object":object})
+        token = await add_token_role(roles, guild_id, email)
         msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
         if client:
             return await client.send_message(msg)

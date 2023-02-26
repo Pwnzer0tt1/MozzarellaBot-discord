@@ -1,8 +1,11 @@
+from dotenv import load_dotenv
+load_dotenv()
 # bot.py
-import discord
+import discord, asyncio
 from discord import app_commands
 from views import AdminView, AuthView
-from utils import db, TOKEN, error_handler
+from utils import TOKEN, error_handler
+from db import init_db
 
 client = discord.Client(intents=discord.Intents.default())
     
@@ -36,6 +39,13 @@ async def gen_auth_token_error(interaction, error):
 async def gen_auth_ch_error(interaction, error):
     await error_handler(interaction, error)
 
+
+async def init_bot():
+    await asyncio.gather(
+        cmd.sync(),
+        init_db()
+    )
+
 global synced
 synced = False
 
@@ -44,8 +54,10 @@ async def on_ready():
     global synced
     print(f'{client.user} has connected to Discord!')
     if not synced:
-        await cmd.sync()
+        await init_bot()
         synced = True
+
+
 
 async def setup_hook():
     client.add_view(AuthView())

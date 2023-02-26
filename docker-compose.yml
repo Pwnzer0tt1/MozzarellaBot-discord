@@ -4,5 +4,4 @@ services:
     bot:
         restart: unless-stopped
         build: .
-        volumes:
-            - ./data:/execute/data
+
