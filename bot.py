@@ -29,7 +29,13 @@ async def gen_auth_token(interaction):
 async def gen_auth_ch(interaction):
     await interaction.response.defer()
     await reset_auth_channel(interaction.channel)
-    
+
+@cmd.command(name="clearchat", description="Delete all content in the chat")
+@app_commands.default_permissions(administrator=True)
+@app_commands.checks.has_permissions(administrator=True)
+async def gen_auth_ch(interaction):
+    await interaction.response.defer()
+    await interaction.channel.purge()
 
 @gen_auth_token.error
 async def gen_auth_token_error(interaction, error):
