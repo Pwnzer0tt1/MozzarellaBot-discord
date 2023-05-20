@@ -1,8 +1,8 @@
-import os, discord, asyncio, secrets
+import os, discord, asyncio, secrets, re
 from email.message import EmailMessage
-import aiosmtplib
+import aiosmtplib, traceback
 from discord import app_commands
-from db import Token, RoleOp
+from db import Token, RoleOp, RenameOp
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 EMAIL_FROM = os.getenv('EMAIL_FROM')
@@ -14,10 +14,10 @@ MONGO_URL = os.getenv('MONGO_URL')
 GENERAL_TIMEOUT = int(os.getenv('GENERAL_TIMEOUT', 24*60*60))
 
 EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
+EMAIL_FORMAT_REGEX = re.compile("(?P<email>"+EMAIL_REGEX+")(:?[ ]*<(?P<nickname>.*)>)?")
 
-
-async def add_token_role(roles, guild_id, email=None):
-    roles = list(map(int, roles))
+async def add_token(guild_id, roles=None, email=None, rename:str=None):
+    roles = list(map(int, roles)) if roles else []
     guild_id = int(guild_id)
     exc = None
     for _ in range(3):
@@ -25,7 +25,10 @@ async def add_token_role(roles, guild_id, email=None):
             new_token = Token(
                 token=secrets.token_hex(16),
                 guild=guild_id,
-                operations=[RoleOp(roles)],
+                operations=list(filter(lambda ele: not ele is None, [
+                        RoleOp(roles) if roles else None,
+                        RenameOp(rename) if rename else None
+                    ])),
                 email=email
             )
             await new_token.save()
@@ -35,6 +38,16 @@ async def add_token_role(roles, guild_id, email=None):
     else:
         raise exc
     return new_token.token
+
+def gen_text_description_actions(data):
+    res = []
+    if "roles" in data:
+        res.append(f"I will add {len(data['roles'])} role(s)")
+    if "rename" in data:
+        res.append(f"I will rename you to `{data['rename']}`")
+    if len(res) == 0:
+        return "No actions"
+    return "- "+("\n- ".join(res))
 
 async def action_handler(action, interaction):
     if action.type == "role":
@@ -48,9 +61,17 @@ async def action_handler(action, interaction):
             roles = [discord.utils.get(interaction.guild.roles,id=int(role)) for role in action.roles]
             asyncio.gather(*[add_role(interaction, ele) for ele in roles])
         except Exception:
+            traceback.print_exc()
             return "There was a problem trying to add the role(s) :/, if it's necessary, contact the admin, the token has been invalidated :("
         
-        return f"Authenticated successfully with role(s) `{'` `'.join([r.name for r in roles])}`, Welcome to the server!"
+        return f"Authenticated successfully with role(s) \'"+' \''.join([r.name for r in roles])+"\'"
+    elif action.type == "rename":
+        try:
+            await interaction.user.edit(nick=action.rename)
+        except Exception:
+            traceback.print_exc()
+            return "There was a problem trying to rename you :/, if it's necessary, contact the admin, the token has been invalidated :("
+        return f"Renamed successfully with name '{action.rename}'"
     else:
         return "Error: Unknown action 0_0"
 
@@ -58,10 +79,13 @@ async def _send_email_wih_token(email, object, message, roles, guild_id, client=
     try:
         msg = EmailMessage()
         msg["From"] = EMAIL_FROM
-        msg["To"] = email
+        msg["To"] = email["email"]
         msg["Subject"] = object
-        token = await add_token_role(roles, guild_id, email)
-        msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
+        token = await add_token(guild_id, roles=roles, email=email["email"], rename=email["nickname"])
+        if r"%%TOKEN%%" in message:
+            msg.set_content(message.replace("%%TOKEN%%", token))
+        else:
+            msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
         if client:
             return await client.send_message(msg)
         else:
