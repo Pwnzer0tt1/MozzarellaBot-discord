@@ -104,7 +104,7 @@ async def send_emails_with_token(emails, object, message, roles, guild_id):
         await client.quit()
     except Exception:
         client.close()
-    return [(email, result[i])for i,email in enumerate(emails) if isinstance(result[i], Exception) or result[i] is None]
+    return [(email, result[i]) for i,email in enumerate(emails) if isinstance(result[i], Exception) or result[i] is None]
 
 async def error_handler(error, interaction):
     if isinstance(error, app_commands.errors.MissingPermissions):
