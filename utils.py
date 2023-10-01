@@ -47,7 +47,7 @@ def gen_text_description_actions(data):
         res.append(f"I will rename you to `{data['rename']}`")
     if len(res) == 0:
         return "No actions"
-    return "- "+("\n- ".join(res))
+    return "- " + "\n- ".join(res)
 
 async def action_handler(action, interaction):
     if action.type == "role":
