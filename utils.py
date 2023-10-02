@@ -5,9 +5,9 @@ from discord import app_commands
 from db import Token, RoleOp, RenameOp
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-EMAIL_FROM = os.getenv('EMAIL_FROM')
-SMTP_SERVER = os.getenv('SMTP_SERVER')
-SMTP_SERVER_PORT = int(os.getenv('SMTP_SERVER_PORT'))
+EMAIL_FROM = os.getenv('EMAIL_FROM', "info@pwnzer0tt1.it")
+SMTP_SERVER = os.getenv('SMTP_SERVER', "127.0.0.1")
+SMTP_SERVER_PORT = int(os.getenv('SMTP_SERVER_PORT', "587"))
 USER_SMTP = os.getenv('USER_SMTP', EMAIL_FROM)
 PSW_SMTP = os.getenv('PSW_SMTP')
 MONGO_URL = os.getenv('MONGO_URL')
