@@ -55,8 +55,8 @@ class EmailDetailsModal(discord.ui.Modal):
             return
         
         btn_cancel = discord.ui.Button(label="Cancel", style=discord.ButtonStyle.danger)
-        async def cancel_callback(interaction):
-            await interaction.response.delete_message()
+        async def cancel_callback(interaction_clb):
+            await interaction_clb.response.edit_message(content="Operation Cancelled 🛑", view=None)
         btn_cancel.callback = cancel_callback
         
         btn_send = discord.ui.Button(label="Send", style=discord.ButtonStyle.success)
