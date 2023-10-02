@@ -1,6 +1,6 @@
 import discord, asyncio
 from discord import app_commands
-from utils import EMAIL_FORMAT_REGEX, add_token, action_handler, send_emails_with_token, GENERAL_TIMEOUT
+from utils import EMAIL_FORMAT_REGEX, add_token, send_emails_with_token, GENERAL_TIMEOUT, parse_email_message, action_handler
 from db import Token
 from beanie.operators import In
 
@@ -43,7 +43,7 @@ class EmailDetailsModal(discord.ui.Modal):
         self.data = data if data else {}
         self.add_item(discord.ui.TextInput(label="To:", placeholder="user1@domain.com <optional nickname>, user2@domain.com, ...", style=discord.TextStyle.paragraph))
         self.add_item(discord.ui.TextInput(label="Subject:", placeholder="Hi there! Welcome to our discord server!", style=discord.TextStyle.short))
-        self.add_item(discord.ui.TextInput(label="Message:", placeholder="The token will be placed at the end", style=discord.TextStyle.paragraph))
+        self.add_item(discord.ui.TextInput(label="Message:", placeholder="The token will be placed at the end or substituted with %%TOKEN%% in the message", style=discord.TextStyle.paragraph))
     
     @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
@@ -80,7 +80,7 @@ class EmailDetailsModal(discord.ui.Modal):
         view = discord.ui.View()
         view.add_item(btn_cancel)
         view.add_item(btn_send)
-        embed = discord.Embed(title=object, description=message+"\n\n---> DISCORD TOKEN: %TOKEN%\n")
+        embed = discord.Embed(title=object, description=parse_email_message(message, "<USER_TOKEN>"))
         await interaction.response.edit_message(content="The Emails will be sent to {} addresses: `{}` Do you confirm your action?".format(len(emails),"`, `".join(e["email"] for e in emails)), view=view, embed=embed)
  
 class RevokeTokensModal(discord.ui.Modal):

@@ -75,6 +75,13 @@ async def action_handler(action, interaction):
     else:
         return "Error: Unknown action 0_0"
 
+def parse_email_message(message, token):
+    if r"%%TOKEN%%" in message:
+        return message.replace("%%TOKEN%%", token)
+    else:
+        return message+f"\n\n---> DISCORD TOKEN: {token}\n"
+    
+
 async def _send_email_wih_token(email, object, message, roles, guild_id, client=None):
     try:
         msg = EmailMessage()
@@ -82,10 +89,7 @@ async def _send_email_wih_token(email, object, message, roles, guild_id, client=
         msg["To"] = email["email"]
         msg["Subject"] = object
         token = await add_token(guild_id, roles=roles, email=email["email"], rename=email["nickname"])
-        if r"%%TOKEN%%" in message:
-            msg.set_content(message.replace("%%TOKEN%%", token))
-        else:
-            msg.set_content(message+f"\n\n---> DISCORD TOKEN: {token}\n")
+        msg.set_content(parse_email_message(message, token))
         if client:
             return await client.send_message(msg)
         else:
