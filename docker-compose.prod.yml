@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+    bot:
+        restart: unless-stopped
+        image: ghcr.io/pwnzer0tt1/MozzarellaBot-discord 
+        environment:
+          - MONGO_URL=mongodb-url
+          - DISCORD_TOKEN=TOKEN
+          - EMAIL_FROM=email@pwnzer0tt1.it
+          - SMTP_SERVER=smtp.local
+          - USER_SMTP=username
+          - PSW_SMTP=secret
+

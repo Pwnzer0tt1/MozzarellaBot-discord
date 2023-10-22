@@ -17,7 +17,7 @@ class Operation(BaseModel):
 class Token(Document):
     token: Indexed(str, unique=True)
     guild: Indexed(int)
-    email: Optional[str]
+    email: None|str = None
     operations: list[Operation]
 
 def RoleOp(roles: list[int]):
