@@ -3,7 +3,11 @@ A Pwnzer0tt1 Bot with Mozzarella!
 
 You find me in the pwnzer0tt1 server to manage user authentication and not only :D
 
-If you want to use this bot, you need to create a `.env` file with the following variables:
+If you want to use this bot, you need to create a `.env` file with the following variables, after that:
+
+```bash
+docker compose up -d --build
+```
 
 ## ENV variables
 
