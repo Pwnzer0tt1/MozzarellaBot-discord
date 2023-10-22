@@ -1,4 +1,4 @@
-FROM python:slim
+FROM python:3.11-slim
 
 RUN mkdir -p /execute/modules
 WORKDIR /execute
