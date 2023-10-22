@@ -3,7 +3,7 @@ version: '3'
 services:
     bot:
         restart: unless-stopped
-        image: ghcr.io/pwnzer0tt1/MozzarellaBot-discord 
+        image: ghcr.io/pwnzer0tt1/mozzarellabot-discord 
         environment:
           - MONGO_URL=mongodb-url
           - DISCORD_TOKEN=TOKEN
