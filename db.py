@@ -11,8 +11,8 @@ db_client = AsyncIOMotorClient(MONGO_URL)
 
 class Operation(BaseModel):
     type: str
-    roles: Optional[list[int]]
-    rename: Optional[str]
+    roles: None|list[int] = None
+    rename: None|str = None
 
 class Token(Document):
     token: Indexed(str, unique=True)
