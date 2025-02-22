@@ -23,7 +23,7 @@ class GenTokensBtn(discord.ui.Button):
 
 class GenPasswordTokenBtn(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="Create a password token", style=discord.ButtonStyle.premium)
+        super().__init__(label="Create a password token", style=discord.ButtonStyle.blurple)
     
     @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
@@ -143,9 +143,10 @@ class AdminView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=GENERAL_TIMEOUT)
         self.add_item(GenTokensBtn())
+        self.add_item(GenPasswordTokenBtn())
         self.add_item(RevokeTokensBtn())
         self.add_item(EmailTokensBtn())
-        self.add_item(GenPasswordTokenBtn())
+       
         
 class AuthBtn(discord.ui.Button):
     def __init__(self):

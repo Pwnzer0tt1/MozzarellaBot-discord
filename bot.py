@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 # bot.py
-import discord, asyncio
+import discord
+import asyncio
 from discord import app_commands
 from views import AdminView, AuthView
 from utils import TOKEN, error_handler
