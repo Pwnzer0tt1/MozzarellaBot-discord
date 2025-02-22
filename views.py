@@ -1,5 +1,6 @@
-import discord, asyncio
-from modals import GenTokensModal, EmailDetailsModal, RevokeTokensModal, AuthModal, RenameModal
+import discord
+import asyncio
+from modals import GenTokensModal, EmailDetailsModal, RevokeTokensModal, AuthModal, RenameModal, GenPasswordModal
 from discord import app_commands
 from utils import GENERAL_TIMEOUT, gen_text_description_actions
 
@@ -20,6 +21,14 @@ class GenTokensBtn(discord.ui.Button):
     async def callback(self, interaction):
         await interaction.response.edit_message(content="Select the action to enable with this token", view=GenTokenSelectOperations())
 
+class GenPasswordTokenBtn(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="Create a password token", style=discord.ButtonStyle.premium)
+    
+    @app_commands.checks.has_permissions(administrator=True)
+    async def callback(self, interaction):
+        await interaction.response.edit_message(content="Select the action to enable with this password", view=GenPasswordSelectOperations())
+
 class OkBtn(discord.ui.Button):
     def __init__(self, next_action=None):
         super().__init__(label="Ok", style=discord.ButtonStyle.green)
@@ -31,8 +40,9 @@ class OkBtn(discord.ui.Button):
             await self.next_action(interaction)
         
 class SelectRoleBtn(discord.ui.Button):
-    def __init__(self, data:dict=None):
+    def __init__(self, data:dict=None, class_to_use=None):
         super().__init__(label="Assign some roles", style=discord.ButtonStyle.primary)
+        self.class_to_use = class_to_use
         self.data = data if data else {}
     
     @app_commands.checks.has_permissions(administrator=True)
@@ -43,32 +53,47 @@ class SelectRoleBtn(discord.ui.Button):
         @app_commands.checks.has_permissions(administrator=True)
         async def select_roles_callback(interact):
             self.data["roles"] = interact.data["values"]
-            await interact.response.edit_message(content=gen_text_description_actions(self.data), view=GenTokenSelectOperations(self.data))
+            await interact.response.edit_message(content=gen_text_description_actions(self.data), view=self.class_to_use(self.data))
         select_roles.callback = select_roles_callback
         await interaction.response.edit_message(content="Select the role to add with tokens", view=view)
 
 class RenameBtn(discord.ui.Button):
-    def __init__(self, data:dict=None):
+    def __init__(self, data:dict=None, class_to_use=None):
         super().__init__(label="Rename", style=discord.ButtonStyle.primary)
+        self.class_to_use = class_to_use
         self.data = data if data else {}
     
     @app_commands.checks.has_permissions(administrator=True)
     async def callback(self, interaction):
         async def next_action(interact):
             self.data["rename"] = interact.data["components"][0]["components"][0]["value"]
-            await interact.response.edit_message(content=gen_text_description_actions(self.data), view=GenTokenSelectOperations(self.data))
+            await interact.response.edit_message(content=gen_text_description_actions(self.data), view=self.class_to_use(self.data))
         modal = RenameModal(self.data, next_action=next_action)
         await asyncio.gather(
             interaction.response.send_modal(modal),
-            interaction.edit_original_response(content="Insert the amount of tokens to generate", view=OpenModalView(modal)),
+            interaction.edit_original_response(content="Insert the name to rename", view=OpenModalView(modal)),
         )
+
+class GenPasswordSelectOperations(discord.ui.View):
+    def __init__(self, data=None):
+        super().__init__(timeout=GENERAL_TIMEOUT)
+        self.data = data if data else {}
+        self.add_item(SelectRoleBtn(self.data, class_to_use=GenPasswordSelectOperations))
+        self.add_item(RenameBtn(self.data, class_to_use=GenPasswordSelectOperations))
+        async def nextop(interaction):
+            modal = GenPasswordModal(self.data)
+            await asyncio.gather(
+                interaction.response.send_modal(modal),
+                interaction.edit_original_response(content="Insert the password to use", view=OpenModalView(modal)),
+            )
+        self.add_item(OkBtn(next_action=nextop))
 
 class GenTokenSelectOperations(discord.ui.View):
     def __init__(self, data=None):
         super().__init__(timeout=GENERAL_TIMEOUT)
         self.data = data if data else {}
-        self.add_item(SelectRoleBtn(self.data))
-        self.add_item(RenameBtn(self.data))
+        self.add_item(SelectRoleBtn(self.data, class_to_use=GenTokenSelectOperations))
+        self.add_item(RenameBtn(self.data, class_to_use=GenTokenSelectOperations))
         async def nextop(interaction):
             modal = GenTokensModal(self.data)
             await asyncio.gather(
@@ -120,6 +145,7 @@ class AdminView(discord.ui.View):
         self.add_item(GenTokensBtn())
         self.add_item(RevokeTokensBtn())
         self.add_item(EmailTokensBtn())
+        self.add_item(GenPasswordTokenBtn())
         
 class AuthBtn(discord.ui.Button):
     def __init__(self):

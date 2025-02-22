@@ -1,4 +1,5 @@
-import discord, asyncio
+import discord
+import asyncio
 from discord import app_commands
 from utils import EMAIL_FORMAT_REGEX, add_token, send_emails_with_token, GENERAL_TIMEOUT, parse_email_message, action_handler
 from db import Token
@@ -19,6 +20,21 @@ class GenTokensModal(discord.ui.Modal):
         tokens = await asyncio.gather(*[add_token(interaction.guild.id, **self.data) for _ in range(int(amount))])
         token_text = "\n".join(tokens)
         await interaction.response.edit_message(content=f"Here are your generated tokens:\n```\n{token_text}\n```\nSave the tokens before closing this message!", view=None)
+
+class GenPasswordModal(discord.ui.Modal):
+    def __init__(self, data=None):
+        super().__init__(title="Generate Password", timeout=GENERAL_TIMEOUT)
+        self.data = data if data else {}
+        self.add_item(discord.ui.TextInput(label="Insert the password to use"))
+    
+    @app_commands.checks.has_permissions(administrator=True)
+    async def on_submit(self, interaction):
+        psw = interaction.data["components"][0]["components"][0]["value"]
+        if not isinstance(psw,str) or len(psw) < 4:
+            await interaction.response.edit_message("Please insert a password with at least 4 characters")
+            return
+        await add_token(interaction.guild.id, **self.data, permanent=True, token=psw)
+        await interaction.response.edit_message(content=f"The password-token '{psw}' has been created successfully!", view=None)
 
 class RenameModal(discord.ui.Modal):
     def __init__(self, data=None, next_action=None):
@@ -109,6 +125,7 @@ class AuthModal(discord.ui.Modal):
             await interaction.response.send_message("Token invalid, already used or expired :/", ephemeral=True)
         else:
             results = await asyncio.gather(*[action_handler(action, interaction) for action in fetched_token.operations])
-            await fetched_token.delete()
+            if not fetched_token.permanent:
+                await fetched_token.delete()
             text = f"Token accepted, {len(results)} actions performed:\n```"+('```\n```'.join(results))+"```"
             return await interaction.response.send_message(text, ephemeral=True)

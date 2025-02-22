@@ -1,7 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import Document, Indexed, init_beanie
-from typing import Optional
-import os, datetime
+import os
 from pydantic import BaseModel 
 
 MONGO_URL = os.getenv('MONGO_URL')
@@ -19,6 +18,7 @@ class Token(Document):
     guild: Indexed(int)
     email: None|str = None
     operations: list[Operation]
+    permanent: None|bool = None
 
 def RoleOp(roles: list[int]):
     return Operation(type="role", roles=roles)

@@ -16,20 +16,21 @@ GENERAL_TIMEOUT = int(os.getenv('GENERAL_TIMEOUT', 24*60*60))
 EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
 EMAIL_FORMAT_REGEX = re.compile("(?P<email>"+EMAIL_REGEX+")(:?[ ]*<(?P<nickname>.*)>)?")
 
-async def add_token(guild_id, roles=None, email=None, rename:str=None):
+async def add_token(guild_id, roles=None, email=None, rename:str=None, permanent:bool=None, token=None):
     roles = list(map(int, roles)) if roles else []
     guild_id = int(guild_id)
     exc = None
     for _ in range(3):
         try:
             new_token = Token(
-                token=secrets.token_hex(16),
+                token=secrets.token_hex(16)if token is None else token,
                 guild=guild_id,
-                operations=list(filter(lambda ele: not ele is None, [
+                operations=list(filter(lambda ele: ele is not None, [
                         RoleOp(roles) if roles else None,
                         RenameOp(rename) if rename else None
                     ])),
-                email=email
+                email=email,
+                permanent=permanent
             )
             await new_token.save()
             break
