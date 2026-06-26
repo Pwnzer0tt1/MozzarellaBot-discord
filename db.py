@@ -1,31 +1,48 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from beanie import Document, Indexed, init_beanie
 import os
-from pydantic import BaseModel 
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger
+from sqlalchemy.dialects.postgresql import JSONB
 
-MONGO_URL = os.getenv('MONGO_URL')
-DB_NAME = os.getenv('DB_NAME', "mozzarellabot")
+POSTGRES_URL = os.getenv("POSTGRES_URL")
 
-db_client = AsyncIOMotorClient(MONGO_URL)
+engine = create_async_engine(POSTGRES_URL, echo=False) if POSTGRES_URL else None
+async_session = (
+    sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    if engine
+    else None
+)
+Base = declarative_base()
+
 
 class Operation(BaseModel):
     type: str
-    roles: None|list[int] = None
-    rename: None|str = None
+    roles: None | list[int] = None
+    rename: None | str = None
 
-class Token(Document):
-    token: Indexed(str, unique=True)
-    guild: Indexed(int)
-    email: None|str = None
-    operations: list[Operation]
-    permanent: None|bool = None
+
+class Token(Base):
+    __tablename__ = "tokens"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    guild = Column(BigInteger, index=True, nullable=False)
+    email = Column(String, nullable=True)
+    operations = Column(JSONB, nullable=False)
+    permanent = Column(Boolean, nullable=True)
+
 
 def RoleOp(roles: list[int]):
-    return Operation(type="role", roles=roles)
+    return Operation(type="role", roles=roles).dict()
+
 
 def RenameOp(name: str):
-    return Operation(type="rename", rename=name.strip())
+    return Operation(type="rename", rename=name.strip()).dict()
+
 
 async def init_db():
-    # Initialize beanie with the Product document class
-    await init_beanie(database=db_client[DB_NAME], document_models=[Token])
+    if engine is None:
+        print("Warning: POSTGRES_URL is not set.")
+        return
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

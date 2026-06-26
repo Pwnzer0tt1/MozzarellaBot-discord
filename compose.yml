@@ -1,0 +1,24 @@
+services:
+    bot:
+        restart: unless-stopped
+        image: ghcr.io/pwnzer0tt1/mozzarellabot-discord 
+        environment:
+          - POSTGRES_URL=postgresql+asyncpg://user:password@db:5432/mozzarellabot
+          - DISCORD_TOKEN=TOKEN
+          - EMAIL_FROM=email@pwnzer0tt1.it
+          - SMTP_SERVER=smtp.local
+          - USER_SMTP=username
+          - PSW_SMTP=secret
+        depends_on:
+          - db
+    db:
+        image: postgres:18-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: mozzarellabot
+        volumes:
+            - ./db:/var/lib/postgresql/data
+        ports:
+          - 5432:5432

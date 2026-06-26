@@ -13,8 +13,6 @@ docker compose up -d --build
 
 | Variable           | Description                         | Required | Default            |
 |--------------------|-------------------------------------|----------|--------------------|
-| `MONGO_URL`        | Mongo DB URL to allow DB connection | Yes      | None               |
-| `DB_NAME`          | Database name used on mongoDB       | No       | `mozzarellabot`    |
 | `DISCORD_TOKEN`    | The discord token of the bot        | Yes      | None               |
 | `EMAIL_FROM`       | Email From Field                    | No       | `info@pwnzer0tt1.it`    |
 | `SMTP_SERVER`      | IP of SMTP server                   | No       | `127.0.0.1`        |
