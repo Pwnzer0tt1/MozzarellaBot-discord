@@ -2,8 +2,8 @@ import discord
 import asyncio
 from discord import app_commands
 from utils import EMAIL_FORMAT_REGEX, add_token, send_emails_with_token, GENERAL_TIMEOUT, parse_email_message, action_handler
-from db import Token
-from beanie.operators import In
+from db import Token, async_session, Operation
+from sqlalchemy import select, delete
 
 class GenTokensModal(discord.ui.Modal):
     def __init__(self, data=None):
@@ -107,9 +107,15 @@ class RevokeTokensModal(discord.ui.Modal):
     @app_commands.checks.has_permissions(administrator=True)
     async def on_submit(self, interaction):
         tokens = [ele.strip() for ele in interaction.data["components"][0]["components"][0]["value"].split() if ele]
-        token_to_delete = Token.find(In(Token.token, tokens))
-        counter_tokens = await token_to_delete.count()
-        await token_to_delete.delete()
+        async with async_session() as session:
+            stmt = select(Token).where(Token.token.in_(tokens))
+            result = await session.execute(stmt)
+            tokens_to_delete = result.scalars().all()
+            counter_tokens = len(tokens_to_delete)
+            
+            del_stmt = delete(Token).where(Token.token.in_(tokens))
+            await session.execute(del_stmt)
+            await session.commit()
         await interaction.response.edit_message(content=f"Successfully revoked {counter_tokens} tokens", view=None)
 
 
@@ -120,12 +126,17 @@ class AuthModal(discord.ui.Modal):
     
     async def on_submit(self, interaction):
         token = interaction.data["components"][0]["components"][0]["value"]
-        fetched_token = await Token.find_one(Token.token == token, Token.guild == interaction.guild.id)
-        if fetched_token is None:
-            await interaction.response.send_message("Token invalid, already used or expired :/", ephemeral=True)
-        else:
-            results = await asyncio.gather(*[action_handler(action, interaction) for action in fetched_token.operations])
-            if not fetched_token.permanent:
-                await fetched_token.delete()
-            text = f"Token accepted, {len(results)} actions performed:\n```"+('```\n```'.join(results))+"```"
+        async with async_session() as session:
+            stmt = select(Token).where(Token.token == token, Token.guild == interaction.guild.id)
+            result = await session.execute(stmt)
+            fetched_token = result.scalars().first()
+            if fetched_token is None:
+                await interaction.response.send_message("Token invalid, already used or expired :/", ephemeral=True)
+            else:
+                operations = [Operation(**action) for action in fetched_token.operations]
+                results = await asyncio.gather(*[action_handler(action, interaction) for action in operations])
+                if not fetched_token.permanent:
+                    await session.delete(fetched_token)
+                    await session.commit()
+                text = f"Token accepted, {len(results)} actions performed:\n```"+('```\n```'.join(results))+"```"
             return await interaction.response.send_message(text, ephemeral=True)
