@@ -1,7 +1,7 @@
 services:
     bot:
         restart: unless-stopped
-        image: ghcr.io/pwnzer0tt1/mozzarellabot-discord 
+        build: .
         environment:
           - POSTGRES_URL=postgresql+asyncpg://user:password@db:5432/mozzarellabot
           - DISCORD_TOKEN=TOKEN
