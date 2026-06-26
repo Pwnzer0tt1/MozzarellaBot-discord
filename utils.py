@@ -2,7 +2,7 @@ import os, discord, asyncio, secrets, re
 from email.message import EmailMessage
 import aiosmtplib, traceback
 from discord import app_commands
-from db import Token, RoleOp, RenameOp
+from db import Token, RoleOp, RenameOp, async_session
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 EMAIL_FROM = os.getenv('EMAIL_FROM', "info@pwnzer0tt1.it")
@@ -10,7 +10,7 @@ SMTP_SERVER = os.getenv('SMTP_SERVER', "127.0.0.1")
 SMTP_SERVER_PORT = int(os.getenv('SMTP_SERVER_PORT', "587"))
 USER_SMTP = os.getenv('USER_SMTP', EMAIL_FROM)
 PSW_SMTP = os.getenv('PSW_SMTP')
-MONGO_URL = os.getenv('MONGO_URL')
+
 GENERAL_TIMEOUT = int(os.getenv('GENERAL_TIMEOUT', 24*60*60))
 
 EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
@@ -32,7 +32,9 @@ async def add_token(guild_id, roles=None, email=None, rename:str=None, permanent
                 email=email,
                 permanent=permanent
             )
-            await new_token.save()
+            async with async_session() as session:
+                session.add(new_token)
+                await session.commit()
             break
         except Exception as e:
             exc = e

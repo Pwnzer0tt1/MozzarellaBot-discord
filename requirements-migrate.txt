@@ -1,0 +1,5 @@
+motor
+sqlalchemy
+asyncpg
+python-dotenv
+pydantic
