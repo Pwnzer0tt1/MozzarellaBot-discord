@@ -1,5 +1,11 @@
 discord.py
 python-dotenv
 aiosmtplib
+<<<<<<< Updated upstream
 beanie
 motor
+=======
+sqlalchemy
+asyncpg
+pydantic
+>>>>>>> Stashed changes
