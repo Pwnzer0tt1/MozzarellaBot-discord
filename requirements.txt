@@ -1,6 +1,6 @@
-discord.py
-python-dotenv
-aiosmtplib
-sqlalchemy
-asyncpg
-pydantic
+discord.py==2.7.1
+python-dotenv==1.2.4
+aiosmtplib==5.1.3
+sqlalchemy[asyncio]==2.1.9
+asyncpg==0.32.0
+pydantic==2.14.4
